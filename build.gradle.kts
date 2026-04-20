@@ -22,9 +22,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 
-    // Google Ads Java client (v17+ supports v23 API)
-    // https://github.com/googleads/google-ads-java/releases — verify current version on clone
-    implementation("com.google.api-ads:google-ads:36.0.0")
+    // Google Ads Java client
+    //   - v42.0.0+ supports Google Ads API v23
+    //   - v42.2.0 supports v23_2 (2026-03-25 release)
+    //   https://github.com/googleads/google-ads-java/releases
+    implementation("com.google.api-ads:google-ads:42.2.0")
 
     // For direct REST calls / OAuth refresh when we want to bypass the client
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
