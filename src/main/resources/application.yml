@@ -1,0 +1,18 @@
+spring:
+  main:
+    web-application-type: none
+    banner-mode: off
+
+google-ads:
+  client-id: ${GOOGLE_ADS_CLIENT_ID:}
+  client-secret: ${GOOGLE_ADS_CLIENT_SECRET:}
+  developer-token: ${GOOGLE_ADS_DEVELOPER_TOKEN:}
+  refresh-token: ${GOOGLE_ADS_REFRESH_TOKEN:}
+  login-customer-id: ${GOOGLE_ADS_LOGIN_CUSTOMER_ID:}
+  customer-id: ${GOOGLE_ADS_CUSTOMER_ID:}
+
+logging:
+  level:
+    root: INFO
+    com.google.ads: WARN
+    com.musinsa.gads: DEBUG
