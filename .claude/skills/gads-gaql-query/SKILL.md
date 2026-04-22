@@ -1,6 +1,6 @@
 ---
 name: gads-gaql-query
-description: Google Ads Query Language(GAQL)로 리소스 조회와 성과 지표 쿼리를 수행한다. 자주 쓰는 쿼리 템플릿(merchant_center_link, campaign metrics, shopping_performance_view 등)을 제공한다. Google Ads API 조회/검증/사전점검 작업에서 반드시 이 스킬을 사용할 것.
+description: Google Ads Query Language(GAQL)로 리소스 조회와 성과 지표 쿼리를 수행한다. 자주 쓰는 쿼리 템플릿(customer, product_link, campaign metrics, shopping_performance_view 등)을 제공한다. Google Ads API 조회/검증/사전점검 작업에서 반드시 이 스킬을 사용할 것.
 ---
 
 # gads-gaql-query
@@ -56,15 +56,32 @@ FROM customer
 ```
 → `test_account: true` 확인하면 현재 계정이 테스트 계정인지 검증.
 
-### T0-2. Merchant Center 링크 상태 (B2 블로커 확인)
+### T0-2. Merchant Center 링크 상태 — 확정된 링크 (B2 블로커 확인)
+
+**⚠️ v23 변경점**: `merchant_center_link` 리소스는 **deprecated**. 대체: `product_link` (확정된 링크) + `product_link_invitation` (대기 중 초대).
+
 ```sql
 SELECT
-  merchant_center_link.id,
-  merchant_center_link.merchant_center_id,
-  merchant_center_link.status
-FROM merchant_center_link
+  product_link.resource_name,
+  product_link.type,
+  product_link.merchant_center.merchant_center_id
+FROM product_link
+WHERE product_link.type = 'MERCHANT_CENTER'
 ```
-→ `status: ENABLED`인 링크가 있어야 Retail PMax 생성 가능.
+→ 결과가 1건 이상 있으면 링크 완료 상태. 0건이면 대기 초대 또는 미요청 상태 의심.
+
+### T0-2-b. Merchant Center 대기 초대 확인
+
+```sql
+SELECT
+  product_link_invitation.resource_name,
+  product_link_invitation.type,
+  product_link_invitation.status,
+  product_link_invitation.merchant_center.merchant_center_id
+FROM product_link_invitation
+WHERE product_link_invitation.type = 'MERCHANT_CENTER'
+```
+→ `status: PENDING_APPROVAL`이면 수신자 승인 대기. `product_link`도 `product_link_invitation`도 없으면 링크 요청 자체가 없음.
 
 ### T0-3. 접근 가능한 하위 고객 목록
 ```sql
@@ -122,7 +139,8 @@ WHERE segments.date = '2026-04-19'
 - [campaign](https://developers.google.com/google-ads/api/fields/v23/campaign)
 - [metrics](https://developers.google.com/google-ads/api/fields/v23/metrics)
 - [shopping_performance_view](https://developers.google.com/google-ads/api/fields/v23/shopping_performance_view)
-- [merchant_center_link](https://developers.google.com/google-ads/api/fields/v23/merchant_center_link)
+- [product_link](https://developers.google.com/google-ads/api/fields/v23/product_link) — MC 등 외부 서비스 확정 링크 (v23에서 `merchant_center_link` 대체)
+- [product_link_invitation](https://developers.google.com/google-ads/api/fields/v23/product_link_invitation) — 대기 중 링크 초대
 - [customer](https://developers.google.com/google-ads/api/fields/v23/customer)
 - [customer_client](https://developers.google.com/google-ads/api/fields/v23/customer_client)
 - [전체 리소스 목록 v23](https://developers.google.com/google-ads/api/fields/v23/overview)
