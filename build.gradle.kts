@@ -46,19 +46,59 @@ kotlin {
     }
 }
 
+val gadsEnv: Map<String, String> = listOf(
+    "GOOGLE_ADS_CLIENT_ID",
+    "GOOGLE_ADS_CLIENT_SECRET",
+    "GOOGLE_ADS_DEVELOPER_TOKEN",
+    "GOOGLE_ADS_REFRESH_TOKEN",
+    "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
+    "GOOGLE_ADS_CUSTOMER_ID",
+).associateWith { System.getenv(it) ?: "" }
+
 tasks.withType<Test> {
     useJUnitPlatform()
 
     // Pass env vars through to tests
-    systemProperty("GOOGLE_ADS_CLIENT_ID", System.getenv("GOOGLE_ADS_CLIENT_ID") ?: "")
-    systemProperty("GOOGLE_ADS_CLIENT_SECRET", System.getenv("GOOGLE_ADS_CLIENT_SECRET") ?: "")
-    systemProperty("GOOGLE_ADS_DEVELOPER_TOKEN", System.getenv("GOOGLE_ADS_DEVELOPER_TOKEN") ?: "")
-    systemProperty("GOOGLE_ADS_REFRESH_TOKEN", System.getenv("GOOGLE_ADS_REFRESH_TOKEN") ?: "")
-    systemProperty("GOOGLE_ADS_LOGIN_CUSTOMER_ID", System.getenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID") ?: "")
-    systemProperty("GOOGLE_ADS_CUSTOMER_ID", System.getenv("GOOGLE_ADS_CUSTOMER_ID") ?: "")
+    gadsEnv.forEach { (k, v) -> systemProperty(k, v) }
 
     testLogging {
         events("passed", "skipped", "failed")
         showStandardStreams = true
     }
+}
+
+// ---------- Cleanup tasks ----------
+// Google Ads 테스트 리소스를 명시적으로 삭제한다.
+// 사용법:
+//   ./gradlew cleanupRun        -PrunId=2026-04-22-1530-12345
+//   ./gradlew cleanupOrphaned   -PolderThanHours=24
+//   ./gradlew cleanupAll        -Pconfirm=true
+
+val cleanupMainClass = "com.musinsa.gads.cleanup.GadsCleanupRunnerKt"
+
+fun JavaExec.configureCleanup(mode: String) {
+    group = "cleanup"
+    mainClass.set(cleanupMainClass)
+    classpath = sourceSets["main"].runtimeClasspath
+    gadsEnv.forEach { (k, v) -> systemProperty(k, v) }
+    systemProperty("cleanup.mode", mode)
+    // Project properties → system properties
+    (project.findProperty("runId") as String?)?.let { systemProperty("cleanup.runId", it) }
+    (project.findProperty("olderThanHours") as String?)?.let { systemProperty("cleanup.olderThanHours", it) }
+    (project.findProperty("confirm") as String?)?.let { systemProperty("cleanup.confirm", it) }
+}
+
+tasks.register<JavaExec>("cleanupRun") {
+    description = "Delete resources from a specific test run. Required: -PrunId=<id>"
+    configureCleanup("run")
+}
+
+tasks.register<JavaExec>("cleanupOrphaned") {
+    description = "Delete resources from runs older than N hours. Optional: -PolderThanHours=24 (default 24)"
+    configureCleanup("orphaned")
+}
+
+tasks.register<JavaExec>("cleanupAll") {
+    description = "⚠️  Delete ALL tracked resources. Requires: -Pconfirm=true"
+    configureCleanup("all")
 }
