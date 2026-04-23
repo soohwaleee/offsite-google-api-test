@@ -44,21 +44,45 @@ class MinimalPmaxFixture(
         val filterResourceName: String,
     )
 
+    /** 캠페인 체인에서 ListingGroupFilter 까지 제외한 base 상태. */
+    data class Base(
+        val runSuffix: String,
+        val budgetResourceName: String,
+        val campaignResourceName: String,
+        val assetGroupResourceName: String,
+    )
+
     fun create(): Result {
+        val base = createWithoutFilter()
+        val filter = createListingGroupFilter(base.assetGroupResourceName)
+        return Result(
+            runSuffix = base.runSuffix,
+            budgetResourceName = base.budgetResourceName,
+            campaignResourceName = base.campaignResourceName,
+            assetGroupResourceName = base.assetGroupResourceName,
+            filterResourceName = filter,
+        )
+    }
+
+    /**
+     * 예산·캠페인·애셋그룹만 생성. ListingGroupFilter 는 호출자가 직접 생성해야 한다.
+     *
+     * T3(100개 수동 선택) 처럼 SUBDIVISION 트리를 써야 하는 시나리오 용도.
+     * 기본 UNIT_INCLUDED 루트 필터와 충돌하면 안 되므로 아예 안 만들고 넘긴다.
+     */
+    fun createWithoutFilter(): Base {
         val runSuffix = UUID.randomUUID().toString().substring(0, 8)
         val merchantId = fetchLinkedMerchantId()
 
         val budget = createBudget(runSuffix)
         val campaign = createCampaign(runSuffix, budget, merchantId)
         val assetGroup = createAssetGroup(runSuffix, campaign)
-        val filter = createListingGroupFilter(assetGroup)
 
-        return Result(
+        return Base(
             runSuffix = runSuffix,
             budgetResourceName = budget,
             campaignResourceName = campaign,
             assetGroupResourceName = assetGroup,
-            filterResourceName = filter,
         )
     }
 
